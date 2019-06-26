@@ -63,7 +63,7 @@ void setup() {
   strip.show();            // Turn OFF all pixels ASAP
   //strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
 
-  // Optional functionnalities of EspMQTTClient :
+  // Optional functionnalities of EspMQTTClient
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
   client.enableLastWillMessage(BASIC_TOPIC "connected", "0", mqtt_retained);  // You can activate the retain flag by setting the third parameter to true
 }
@@ -132,10 +132,11 @@ void loop() {
 
 void setHsv(int pixel, int hue, int sat, int bri, int on) {
   // move hue from 360 to 2^16
-  // move sat from 100 to 256
+  // move sat from 100 to 2^8
+  // move bri from 100 to 2^8
 
   // Set pixel's color (in RAM)
-  strip.setPixelColor(pixel, strip.ColorHSV(hue * 182, sat * 2.55, bri * on));
+  strip.setPixelColor(pixel, strip.ColorHSV(hue * 182, sat * 2.55, on * bri * 2.55));
 }
 
 void stepInterlaced() {
