@@ -52,7 +52,7 @@ uint16_t hue = 120; // green
 uint8_t sat = 100;
 uint8_t bri = 10;
 boolean on = true;
-int x = 0;
+int x = INT_MAX;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
@@ -60,7 +60,7 @@ void setup() {
 
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.clear();
-  strip.show();            // Turn OFF all pixels ASAP
+  // strip.show();            // Turn OFF all pixels ASAP
   //strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
 
   // Optional functionnalities of EspMQTTClient
@@ -106,11 +106,6 @@ void onConnectionEstablished() {
   });
 
   client.publish(BASIC_TOPIC "connected", "2", mqtt_retained);
-  client.publish(BASIC_TOPIC_STATUS "hue", String(hue), mqtt_retained);
-  client.publish(BASIC_TOPIC_STATUS "sat", String(sat), mqtt_retained);
-  client.publish(BASIC_TOPIC_STATUS "bri", String(bri), mqtt_retained);
-  client.publish(BASIC_TOPIC_STATUS "on", on ? "1" : "0", mqtt_retained);
-
   digitalWrite(LED_BUILTIN, HIGH);
 }
 
@@ -124,9 +119,9 @@ void loop() {
   if (x != lastX) {
     Serial.println(x);
     lastX = x;
+    strip.show();
   }
 
-  strip.show();
   delay(10);
 }
 
