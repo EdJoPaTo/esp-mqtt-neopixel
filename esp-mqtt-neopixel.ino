@@ -11,6 +11,8 @@
 #include <Adafruit_NeoPixel.h>
 #include <EspMQTTClient.h>
 
+#include "lamp.h"
+
 #define CLIENT_NAME "espNeopixel"
 
 EspMQTTClient client(
@@ -48,15 +50,23 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
-uint16_t hue = 120; // green
-uint8_t sat = 100;
-uint8_t bri = 10;
-boolean on = true;
-int x = INT_MAX;
+Lamp stateStart;
+Lamp stateEnd;
+boolean somethingSet = false;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
+
+  stateStart.hue = 120; // green
+  stateStart.saturation = 100;
+  stateStart.brightness = 10;
+  stateStart.on = true;
+
+  stateEnd.hue = 120; // green
+  stateEnd.saturation = 100;
+  stateEnd.brightness = 10;
+  stateEnd.on = true;
 
   strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.clear();
@@ -69,92 +79,94 @@ void setup() {
 }
 
 void onConnectionEstablished() {
-  client.subscribe(BASIC_TOPIC_SET "hue", [](const String & payload) {
-    int newHue = strtol(payload.c_str(), 0, 10);
-    if (hue != newHue) {
-      hue = newHue;
-      x = 0;
-      client.publish(BASIC_TOPIC_STATUS "hue", payload, mqtt_retained);
-    }
+  client.subscribe(BASIC_TOPIC_SET "start/hue", [](const String & payload) {
+    int value = strtol(payload.c_str(), 0, 10);
+    stateStart.hue = value;
+    somethingSet = true;
+    client.publish(BASIC_TOPIC_STATUS "start/hue", payload, mqtt_retained);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "sat", [](const String & payload) {
-    int newSat = strtol(payload.c_str(), 0, 10);
-    if (sat != newSat) {
-      sat = newSat;
-      x = 0;
-      client.publish(BASIC_TOPIC_STATUS "sat", payload, mqtt_retained);
-    }
+  client.subscribe(BASIC_TOPIC_SET "start/sat", [](const String & payload) {
+    int value = strtol(payload.c_str(), 0, 10);
+    stateStart.saturation = value;
+    somethingSet = true;
+    client.publish(BASIC_TOPIC_STATUS "start/sat", payload, mqtt_retained);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "bri", [](const String & payload) {
-    int newBri = strtol(payload.c_str(), 0, 10);
-    if (bri != newBri) {
-      bri = newBri;
-      x = 0;
-      client.publish(BASIC_TOPIC_STATUS "bri", payload, mqtt_retained);
-    }
+  client.subscribe(BASIC_TOPIC_SET "start/bri", [](const String & payload) {
+    int value = strtol(payload.c_str(), 0, 10);
+    stateStart.brightness = value;
+    somethingSet = true;
+    client.publish(BASIC_TOPIC_STATUS "start/bri", payload, mqtt_retained);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "on", [](const String & payload) {
-    boolean newOn = payload != "0";
-    if (on != newOn) {
-      on = newOn;
-      x = 0;
-      client.publish(BASIC_TOPIC_STATUS "on", payload, mqtt_retained);
-    }
+  client.subscribe(BASIC_TOPIC_SET "start/on", [](const String & payload) {
+    boolean value = payload != "0";
+    stateStart.on = value;
+    somethingSet = true;
+    client.publish(BASIC_TOPIC_STATUS "start/on", payload, mqtt_retained);
+  });
+
+    client.subscribe(BASIC_TOPIC_SET "end/hue", [](const String & payload) {
+    int value = strtol(payload.c_str(), 0, 10);
+    stateEnd.hue = value;
+    somethingSet = true;
+    client.publish(BASIC_TOPIC_STATUS "end/hue", payload, mqtt_retained);
+  });
+
+  client.subscribe(BASIC_TOPIC_SET "end/sat", [](const String & payload) {
+    int value = strtol(payload.c_str(), 0, 10);
+    stateEnd.saturation = value;
+    somethingSet = true;
+    client.publish(BASIC_TOPIC_STATUS "end/sat", payload, mqtt_retained);
+  });
+
+  client.subscribe(BASIC_TOPIC_SET "end/bri", [](const String & payload) {
+    int value = strtol(payload.c_str(), 0, 10);
+    stateEnd.brightness = value;
+    somethingSet = true;
+    client.publish(BASIC_TOPIC_STATUS "end/bri", payload, mqtt_retained);
+  });
+
+  client.subscribe(BASIC_TOPIC_SET "end/on", [](const String & payload) {
+    boolean value = payload != "0";
+    stateEnd.on = value;
+    somethingSet = true;
+    client.publish(BASIC_TOPIC_STATUS "end/on", payload, mqtt_retained);
   });
 
   client.publish(BASIC_TOPIC "connected", "2", mqtt_retained);
   digitalWrite(LED_BUILTIN, HIGH);
 }
 
-int lastX = x;
 void loop() {
   client.loop();
 
-  //stepInterlaced();
-  stepMulti();
+  if (somethingSet) {
+    for (int i = 0; i < strip.numPixels(); i++) {
+      double position = (1.0 * i) / strip.numPixels();
 
-  if (x != lastX) {
-    Serial.println(x);
-    lastX = x;
+      int hue = interpolateHue(stateStart.hue, stateEnd.hue, position);
+      int sat = interpolateLinear(stateStart.saturation, stateEnd.saturation, position);
+      int bri = interpolateLinear(stateStart.brightness * stateStart.on, stateEnd.brightness * stateEnd.on, position);
+      setHsv(i, hue, sat, bri);
+    }
+
     strip.show();
   }
 
   delay(10);
 }
 
-void setHsv(int pixel, int hue, int sat, int bri, int on) {
+void setState(int pixel, Lamp state) {
+  setHsv(pixel, state.hue, state.saturation, state.brightness * state.on);
+}
+
+void setHsv(int pixel, int hue, int sat, int bri) {
   // move hue from 360 to 2^16
   // move sat from 100 to 2^8
   // move bri from 100 to 2^8
 
   // Set pixel's color (in RAM)
-  strip.setPixelColor(pixel, strip.ColorHSV(hue * 182, sat * 2.55, on * bri * 2.55));
-}
-
-void stepInterlaced() {
-  if (x >= strip.numPixels()) {
-    return;
-  }
-
-  setHsv(x, hue, sat, bri, on);
-
-  x += 2;
-  if (x >= strip.numPixels() && x % 2 == 0) {
-    x = 1;
-  }
-}
-
-void stepMulti() {
-  if (x >= 10) {
-    return;
-  }
-
-  for (int i = x; i < strip.numPixels(); i += 10) {
-    setHsv(i, hue, sat, bri, on);
-  }
-
-  x++;
+  strip.setPixelColor(pixel, strip.ColorHSV(hue * 182, sat * 2.55, bri * 2.55));
 }
