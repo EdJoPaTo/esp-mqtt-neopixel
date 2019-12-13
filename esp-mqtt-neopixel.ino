@@ -146,8 +146,18 @@ void loop() {
     for (int i = 0; i < strip.numPixels(); i++) {
       double position = (1.0 * i) / strip.numPixels();
 
-      int hue = interpolateHue(stateStart.hue, stateEnd.hue, position);
-      int sat = interpolateLinear(stateStart.saturation, stateEnd.saturation, position);
+      int sat, hue;
+      if (stateStart.on && stateEnd.on) {
+        hue = interpolateHue(stateStart.hue, stateEnd.hue, position);
+        sat = interpolateLinear(stateStart.saturation, stateEnd.saturation, position);
+      } else if (stateStart.on) {
+        hue = stateStart.hue;
+        sat = stateStart.saturation;
+      } else {
+        hue = stateEnd.hue;
+        sat = stateEnd.saturation;
+      }
+
       int bri = interpolateLinear(stateStart.brightness * stateStart.on, stateEnd.brightness * stateEnd.on, position);
       setHsv(i, hue, sat, bri);
     }
