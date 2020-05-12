@@ -58,7 +58,7 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
 
-  stateStart.hue = 120; // green
+  stateStart.hue = 240; // blue
   stateStart.saturation = 100;
   stateStart.brightness = 10;
   stateStart.on = true;
