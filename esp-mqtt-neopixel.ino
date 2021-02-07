@@ -19,11 +19,11 @@
 const bool MQTT_RETAINED = true;
 
 EspMQTTClient client(
-  WIFI_SSID,
-  WIFI_PASSWORD,
-  MQTT_SERVER,  // MQTT Broker server ip
-  CLIENT_NAME,  // Client name that uniquely identify your device
-  1883          // The MQTT port, default to 1883. this line can be omitted
+    WIFI_SSID,
+    WIFI_PASSWORD,
+    MQTT_SERVER, // MQTT Broker server ip
+    CLIENT_NAME, // Client name that uniquely identify your device
+    1883         // The MQTT port, default to 1883. this line can be omitted
 );
 
 #define BASIC_TOPIC CLIENT_NAME "/"
@@ -53,7 +53,7 @@ Lamp stateEnd;
 boolean somethingSet = false;
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
+  pinMode(LED_BUILTIN, OUTPUT); // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
 
   stateStart.hue = 240; // blue
@@ -66,9 +66,8 @@ void setup() {
   stateEnd.brightness = 10;
   stateEnd.on = true;
 
-  strip.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
+  strip.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
   strip.clear();
-  // strip.show();            // Turn OFF all pixels ASAP
   //strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
 
   ArduinoOTA.setHostname(CLIENT_NAME);
@@ -80,56 +79,56 @@ void setup() {
 }
 
 void onConnectionEstablished() {
-  client.subscribe(BASIC_TOPIC_SET "start/hue", [](const String & payload) {
+  client.subscribe(BASIC_TOPIC_SET "start/hue", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.hue = value;
     somethingSet = true;
     client.publish(BASIC_TOPIC_STATUS "start/hue", payload, MQTT_RETAINED);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "start/sat", [](const String & payload) {
+  client.subscribe(BASIC_TOPIC_SET "start/sat", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.saturation = value;
     somethingSet = true;
     client.publish(BASIC_TOPIC_STATUS "start/sat", payload, MQTT_RETAINED);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "start/bri", [](const String & payload) {
+  client.subscribe(BASIC_TOPIC_SET "start/bri", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.brightness = value;
     somethingSet = true;
     client.publish(BASIC_TOPIC_STATUS "start/bri", payload, MQTT_RETAINED);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "start/on", [](const String & payload) {
+  client.subscribe(BASIC_TOPIC_SET "start/on", [](const String &payload) {
     boolean value = payload != "0";
     stateStart.on = value;
     somethingSet = true;
     client.publish(BASIC_TOPIC_STATUS "start/on", payload, MQTT_RETAINED);
   });
 
-    client.subscribe(BASIC_TOPIC_SET "end/hue", [](const String & payload) {
+  client.subscribe(BASIC_TOPIC_SET "end/hue", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.hue = value;
     somethingSet = true;
     client.publish(BASIC_TOPIC_STATUS "end/hue", payload, MQTT_RETAINED);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "end/sat", [](const String & payload) {
+  client.subscribe(BASIC_TOPIC_SET "end/sat", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.saturation = value;
     somethingSet = true;
     client.publish(BASIC_TOPIC_STATUS "end/sat", payload, MQTT_RETAINED);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "end/bri", [](const String & payload) {
+  client.subscribe(BASIC_TOPIC_SET "end/bri", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.brightness = value;
     somethingSet = true;
     client.publish(BASIC_TOPIC_STATUS "end/bri", payload, MQTT_RETAINED);
   });
 
-  client.subscribe(BASIC_TOPIC_SET "end/on", [](const String & payload) {
+  client.subscribe(BASIC_TOPIC_SET "end/on", [](const String &payload) {
     boolean value = payload != "0";
     stateEnd.on = value;
     somethingSet = true;
