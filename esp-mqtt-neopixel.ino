@@ -50,7 +50,7 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 Lamp stateStart;
 Lamp stateEnd;
-boolean somethingSet = false;
+uint8_t somethingSet = 0;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT); // Initialize the BUILTIN_LED pin as an output
@@ -82,56 +82,56 @@ void onConnectionEstablished() {
   client.subscribe(BASIC_TOPIC_SET "start/hue", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.hue = value;
-    somethingSet = true;
+    somethingSet |= 1 << 0;
     client.publish(BASIC_TOPIC_STATUS "start/hue", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "start/sat", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.saturation = value;
-    somethingSet = true;
+    somethingSet |= 1 << 1;
     client.publish(BASIC_TOPIC_STATUS "start/sat", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "start/bri", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.brightness = value;
-    somethingSet = true;
+    somethingSet |= 1 << 2;
     client.publish(BASIC_TOPIC_STATUS "start/bri", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "start/on", [](const String &payload) {
     boolean value = payload != "0";
     stateStart.on = value;
-    somethingSet = true;
+    somethingSet |= 1 << 3;
     client.publish(BASIC_TOPIC_STATUS "start/on", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "end/hue", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.hue = value;
-    somethingSet = true;
+    somethingSet |= 1 << 4;
     client.publish(BASIC_TOPIC_STATUS "end/hue", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "end/sat", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.saturation = value;
-    somethingSet = true;
+    somethingSet |= 1 << 5;
     client.publish(BASIC_TOPIC_STATUS "end/sat", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "end/bri", [](const String &payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.brightness = value;
-    somethingSet = true;
+    somethingSet |= 1 << 6;
     client.publish(BASIC_TOPIC_STATUS "end/bri", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "end/on", [](const String &payload) {
     boolean value = payload != "0";
     stateEnd.on = value;
-    somethingSet = true;
+    somethingSet |= 1 << 7;
     client.publish(BASIC_TOPIC_STATUS "end/on", payload, MQTT_RETAINED);
   });
 
@@ -145,7 +145,8 @@ void loop() {
   client.loop();
   ArduinoOTA.handle();
 
-  if (somethingSet) {
+  // Only update colors when all 8 topics were set
+  if (somethingSet == pow(2, 8) - 1) {
     for (int i = 0; i < strip.numPixels(); i++) {
       double position = (1.0 * i) / strip.numPixels();
 
