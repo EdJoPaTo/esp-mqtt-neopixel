@@ -9,28 +9,25 @@
 // (Skipping these may work OK on your workbench but can fail in the field)
 
 #include <Adafruit_NeoPixel.h>
+#include <credentials.h>
 #include <EspMQTTClient.h>
 
 #include "lamp.h"
 
 #define CLIENT_NAME "espNeopixel"
+const bool MQTT_RETAINED = true;
 
 EspMQTTClient client(
-  "WifiSSID",
-  "WifiPassword",
-  "192.168.1.100",  // MQTT Broker server ip
-  "MQTTUsername",   // Can be omitted if not needed
-  "MQTTPassword",   // Can be omitted if not needed
-  CLIENT_NAME,     // Client name that uniquely identify your device
-  1883              // The MQTT port, default to 1883. this line can be omitted
+  WIFI_SSID,
+  WIFI_PASSWORD,
+  MQTT_SERVER,  // MQTT Broker server ip
+  CLIENT_NAME,  // Client name that uniquely identify your device
+  1883          // The MQTT port, default to 1883. this line can be omitted
 );
-
-const bool mqtt_retained = true;
 
 #define BASIC_TOPIC CLIENT_NAME "/"
 #define BASIC_TOPIC_SET BASIC_TOPIC "set/"
 #define BASIC_TOPIC_STATUS BASIC_TOPIC "status/"
-
 
 // Which pin is connected to the NeoPixels?
 const int LED_PIN = 13;
@@ -75,7 +72,7 @@ void setup() {
 
   // Optional functionnalities of EspMQTTClient
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableLastWillMessage(BASIC_TOPIC "connected", "0", mqtt_retained);  // You can activate the retain flag by setting the third parameter to true
+  client.enableLastWillMessage(BASIC_TOPIC "connected", "0", MQTT_RETAINED);  // You can activate the retain flag by setting the third parameter to true
 }
 
 void onConnectionEstablished() {
@@ -83,59 +80,59 @@ void onConnectionEstablished() {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.hue = value;
     somethingSet = true;
-    client.publish(BASIC_TOPIC_STATUS "start/hue", payload, mqtt_retained);
+    client.publish(BASIC_TOPIC_STATUS "start/hue", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "start/sat", [](const String & payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.saturation = value;
     somethingSet = true;
-    client.publish(BASIC_TOPIC_STATUS "start/sat", payload, mqtt_retained);
+    client.publish(BASIC_TOPIC_STATUS "start/sat", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "start/bri", [](const String & payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateStart.brightness = value;
     somethingSet = true;
-    client.publish(BASIC_TOPIC_STATUS "start/bri", payload, mqtt_retained);
+    client.publish(BASIC_TOPIC_STATUS "start/bri", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "start/on", [](const String & payload) {
     boolean value = payload != "0";
     stateStart.on = value;
     somethingSet = true;
-    client.publish(BASIC_TOPIC_STATUS "start/on", payload, mqtt_retained);
+    client.publish(BASIC_TOPIC_STATUS "start/on", payload, MQTT_RETAINED);
   });
 
     client.subscribe(BASIC_TOPIC_SET "end/hue", [](const String & payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.hue = value;
     somethingSet = true;
-    client.publish(BASIC_TOPIC_STATUS "end/hue", payload, mqtt_retained);
+    client.publish(BASIC_TOPIC_STATUS "end/hue", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "end/sat", [](const String & payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.saturation = value;
     somethingSet = true;
-    client.publish(BASIC_TOPIC_STATUS "end/sat", payload, mqtt_retained);
+    client.publish(BASIC_TOPIC_STATUS "end/sat", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "end/bri", [](const String & payload) {
     int value = strtol(payload.c_str(), 0, 10);
     stateEnd.brightness = value;
     somethingSet = true;
-    client.publish(BASIC_TOPIC_STATUS "end/bri", payload, mqtt_retained);
+    client.publish(BASIC_TOPIC_STATUS "end/bri", payload, MQTT_RETAINED);
   });
 
   client.subscribe(BASIC_TOPIC_SET "end/on", [](const String & payload) {
     boolean value = payload != "0";
     stateEnd.on = value;
     somethingSet = true;
-    client.publish(BASIC_TOPIC_STATUS "end/on", payload, mqtt_retained);
+    client.publish(BASIC_TOPIC_STATUS "end/on", payload, MQTT_RETAINED);
   });
 
-  client.publish(BASIC_TOPIC "connected", "2", mqtt_retained);
+  client.publish(BASIC_TOPIC "connected", "2", MQTT_RETAINED);
   digitalWrite(LED_BUILTIN, HIGH);
 }
 
