@@ -9,6 +9,7 @@
 // (Skipping these may work OK on your workbench but can fail in the field)
 
 #include <Adafruit_NeoPixel.h>
+#include <ArduinoOTA.h>
 #include <credentials.h>
 #include <EspMQTTClient.h>
 
@@ -70,9 +71,12 @@ void setup() {
   // strip.show();            // Turn OFF all pixels ASAP
   //strip.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
 
-  // Optional functionnalities of EspMQTTClient
-  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableLastWillMessage(BASIC_TOPIC "connected", "0", MQTT_RETAINED);  // You can activate the retain flag by setting the third parameter to true
+  ArduinoOTA.setHostname(CLIENT_NAME);
+
+  // EspMQTTClient
+  client.enableDebuggingMessages();
+  client.enableHTTPWebUpdater();
+  client.enableLastWillMessage(BASIC_TOPIC "connected", "0", MQTT_RETAINED);
 }
 
 void onConnectionEstablished() {
@@ -132,12 +136,15 @@ void onConnectionEstablished() {
     client.publish(BASIC_TOPIC_STATUS "end/on", payload, MQTT_RETAINED);
   });
 
+  ArduinoOTA.begin();
+
   client.publish(BASIC_TOPIC "connected", "2", MQTT_RETAINED);
   digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void loop() {
   client.loop();
+  ArduinoOTA.handle();
 
   if (somethingSet) {
     for (int i = 0; i < strip.numPixels(); i++) {
