@@ -140,29 +140,30 @@ void loop() {
   digitalWrite(LED_BUILTIN, client.isConnected() ? HIGH : LOW);
 
   // Only update colors when all 8 topics were set
-  if (somethingSet == pow(2, 8) - 1) {
-    for (int i = 0; i < strip.numPixels(); i++) {
-      double position = (1.0 * i) / strip.numPixels();
-
-      int sat, hue;
-      if (stateStart.on && stateEnd.on) {
-        hue = interpolateHue(stateStart.hue, stateEnd.hue, position);
-        sat = interpolateLinear(stateStart.saturation, stateEnd.saturation, position);
-      } else if (stateStart.on) {
-        hue = stateStart.hue;
-        sat = stateStart.saturation;
-      } else {
-        hue = stateEnd.hue;
-        sat = stateEnd.saturation;
-      }
-
-      int bri = interpolateLinear(stateStart.brightness * stateStart.on, stateEnd.brightness * stateEnd.on, position);
-      setHsv(i, hue, sat, bri);
-    }
-
-    strip.show();
+  if (somethingSet != pow(2, 8) - 1) {
+    return;
   }
 
+  for (uint16_t i = 0; i < strip.numPixels(); i++) {
+    double position = (1.0 * i) / strip.numPixels();
+
+    int sat, hue;
+    if (stateStart.on && stateEnd.on) {
+      hue = interpolateHue(stateStart.hue, stateEnd.hue, position);
+      sat = interpolateLinear(stateStart.saturation, stateEnd.saturation, position);
+    } else if (stateStart.on) {
+      hue = stateStart.hue;
+      sat = stateStart.saturation;
+    } else {
+      hue = stateEnd.hue;
+      sat = stateEnd.saturation;
+    }
+
+    int bri = interpolateLinear(stateStart.brightness * stateStart.on, stateEnd.brightness * stateEnd.on, position);
+    setHsv(i, hue, sat, bri);
+  }
+
+  strip.show();
   delay(10);
 }
 
@@ -170,11 +171,10 @@ void setState(int pixel, Lamp state) {
   setHsv(pixel, state.hue, state.saturation, state.brightness * state.on);
 }
 
+/// Set pixel's color (in RAM)
 void setHsv(int pixel, int hue, int sat, int bri) {
   // move hue from 360 to 2^16
   // move sat from 100 to 2^8
   // move bri from 100 to 2^8
-
-  // Set pixel's color (in RAM)
   strip.setPixelColor(pixel, strip.ColorHSV(hue * 182, sat * 2.55, bri * 2.55));
 }
